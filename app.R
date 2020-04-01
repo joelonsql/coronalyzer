@@ -2,6 +2,7 @@ library(shinydashboard)
 library(tidyverse)
 library(drc)
 library(lubridate)
+library(scales) 
 
 country_deaths <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv") %>%
     rename(province = "Province/State",
@@ -17,7 +18,7 @@ country_deaths <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COV
 # https://experience.arcgis.com/experience/09f821667ce64bf7be6f9f87457ed9aa
 fhm <- data.frame(
     country     = "Sweden",
-    deaths      = c(1,1,1,2,3,7,8,10,12,16,20,23,33,36,42,66,92,102,110,146,180)
+    deaths      = c(1,1,1,2,3,7,8,10,12,16,20,23,33,36,42,66,92,102,110,146,180,239)
 )
 fhm$date <- as.Date("2020-03-10") + 1:length(fhm$deaths)
 
@@ -124,9 +125,9 @@ server <- function(input, output, session) {
             )
 
         if (input$scale == "log") {
-            print(plot + scale_y_log10())
+            print(plot + scale_y_log10(labels = comma))
         } else {
-            print(plot + scale_y_continuous())
+            print(plot + scale_y_continuous(labels = comma))
         }
                     
     })
@@ -146,9 +147,9 @@ server <- function(input, output, session) {
             ggtitle(paste0("COVID-19 - Total Deaths - 7 day forecast - ", input$country))
 
         if (input$scale == "log") {
-            print(plot + scale_y_log10())
+            print(plot + scale_y_log10(labels = comma))
         } else {
-            print(plot + scale_y_continuous())
+            print(plot + scale_y_continuous(labels = comma))
         }
         
                 
@@ -170,9 +171,9 @@ server <- function(input, output, session) {
             ggtitle(paste0("COVID-19 - New Deaths - 7 day forecast - ", input$country))
 
         if (input$scale == "log") {
-            print(plot + scale_y_log10())
+            print(plot + scale_y_log10(labels = comma))
         } else {
-            print(plot + scale_y_continuous())
+            print(plot + scale_y_continuous(labels = comma))
         }
         
     })

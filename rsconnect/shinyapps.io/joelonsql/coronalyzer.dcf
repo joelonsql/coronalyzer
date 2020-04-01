@@ -5,8 +5,8 @@ account: joelonsql
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 2034504
-bundleId: 2953361
+bundleId: 2953513
 url: https://joelonsql.shinyapps.io/coronalyzer/
-when: 1585739431.95974
+when: 1585742681.66553
 asMultiple: FALSE
 asStatic: FALSE
