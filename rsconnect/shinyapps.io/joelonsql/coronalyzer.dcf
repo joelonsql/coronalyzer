@@ -1,0 +1,12 @@
+name: coronalyzer
+title: coronalyzer
+username:
+account: joelonsql
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 2034504
+bundleId: 2953361
+url: https://joelonsql.shinyapps.io/coronalyzer/
+when: 1585739431.95974
+asMultiple: FALSE
+asStatic: FALSE
