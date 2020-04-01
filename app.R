@@ -75,7 +75,6 @@ server <- function(input, output, session) {
         updateSliderInput(session, "date", max = max(data$date))
 
         base_model <- drm(deaths ~ day, data = data, fct = LL.4(fixed=c(NA,0,NA,NA)))
-        y_limits <- c(1,10^round(log10(base_model$coefficients["d:(Intercept)"])))
         x_limits <- c(first_death, max(
             first_death+as.integer(base_model$coefficients["e:(Intercept)"])*2,
             Sys.Date()+7
@@ -88,6 +87,7 @@ server <- function(input, output, session) {
         summaryVal(model_summary)
         steepness <- model$coefficients["b:(Intercept)"]
         deceased <- model$coefficients["d:(Intercept)"]
+        y_limits <- c(1,round(max(deceased, base_model$coefficients["d:(Intercept)"])))
         inflection <- model$coefficients["e:(Intercept)"]
         inflection_date <- first_death + as.integer(inflection) - 1
         maxDeaths(round(deceased))
@@ -125,9 +125,9 @@ server <- function(input, output, session) {
             )
 
         if (input$scale == "log") {
-            print(plot + scale_y_log10(labels = comma))
+            print(plot + scale_y_log10(limits=y_limits, labels = comma))
         } else {
-            print(plot + scale_y_continuous(labels = comma))
+            print(plot + scale_y_continuous(limits=y_limits, labels = comma))
         }
                     
     })
