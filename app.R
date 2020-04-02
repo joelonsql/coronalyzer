@@ -109,6 +109,7 @@ server <- function(input, output, session) {
         
         plot <- ggplot(data, aes(x=date)) +
             geom_point(aes(y=deaths, color=type, alpha=0.8)) +
+            guides(alpha = FALSE) +
             theme_minimal() +
             scale_x_date(limits=x_limits) +
             geom_vline(aes(xintercept = inflection_date, color="Point of inflection")) +
