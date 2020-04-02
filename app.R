@@ -17,7 +17,7 @@ country_deaths <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COV
 # https://experience.arcgis.com/experience/09f821667ce64bf7be6f9f87457ed9aa
 fhm <- data.frame(
     country     = "Sweden",
-    deaths      = c(1,1,1,2,3,7,8,10,12,16,20,23,33,36,42,66,92,102,110,146,180,239)
+    deaths      = c(1,1,1,2,3,7,8,10,12,16,20,23,33,36,42,66,92,102,110,146,180,239,282)
 )
 fhm$date <- as.Date("2020-03-10") + 1:length(fhm$deaths)
 country_deaths <- rbind(fhm, country_deaths)
