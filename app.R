@@ -76,9 +76,9 @@ server <- function(input, output, session) {
             Sys.Date()+7
         ))
 
-        data <- filter(data, date <= input$date)
+        model_data <- filter(data, date <= input$date)
         
-        model <- drm(deaths ~ day, data = data, fct = LL.4(fixed=c(NA,0,NA,NA)))
+        model <- drm(deaths ~ day, data = model_data, fct = LL.4(fixed=c(NA,0,NA,NA)))
         model_summary <- summary(model)
         summaryVal(model_summary)
         steepness <- model$coefficients["b:(Intercept)"]
@@ -88,9 +88,8 @@ server <- function(input, output, session) {
         inflection_date <- first_death + as.integer(inflection) - 1
         maxDeaths(round(deceased))
         data$model <- NA
-        predict_day <- max(data$day) + 1
-        last_date <- as.Date(max(data$date))
-        end_day <- max(as.integer(2*inflection), max(data$day) + 7)
+        predict_day <- max(model_data$day) + 1
+        end_day <- max(as.integer(2*inflection), max(model_data$day) + 7)
         data$type <- "History"
         data <- data %>% add_row(
             date = NA,
@@ -103,16 +102,15 @@ server <- function(input, output, session) {
         # Convert day from integer to date
         data$date <- first_death + data$day - 1
         predict_day <- first_death + predict_day - 1
-        predict_total <- filter(data,date==predict_day)$deaths
-        predict_new <- predict_total - filter(data,date==predict_day-1)$deaths
+        predict_total <- filter(data,date==predict_day & type == "Forecast")$deaths
+        predict_new <- predict_total - filter(data,date==predict_day-1 & type == "Forecast")$deaths
 
-        graphDataVal(data)
+        graphDataVal(data %>% filter(date <= input$date | type == "Forecast"))
         
         plot <- ggplot(data, aes(x=date)) +
-            geom_point(aes(y=deaths, color=type)) +
+            geom_point(aes(y=deaths, color=type, alpha=0.8)) +
             theme_minimal() +
             scale_x_date(limits=x_limits) +
-            geom_vline(aes(xintercept = input$date, color="Today")) +
             geom_vline(aes(xintercept = inflection_date, color="Point of inflection")) +
             xlab("Datum") +
             ylab("Deaths") +
