@@ -37,9 +37,9 @@ deaths_global <- rbind(fhm, deaths_global)
 # https://www.arcgis.com/sharing/rest/content/items/b5e7488e117749c19881cce45db13f7e/data
 fhm <- data.frame(
     country     = "Sweden FHM Excel",
-    cases      = cumsum(c(1,0,0,0,0,0,0,0,0,1,0,1,1,2,2,1,6,7,9,8,11,9,16,22,27,31,29,27,30,33,23,22,2+12))
+    cases      = cumsum(c(1,0,1,1,2,2,1,6,7,9,8,11,9,16,22,27,31,29,27,30,33,23,22,2+12))
 )
-fhm$date <- as.Date("2020-03-01") + 1:length(fhm$cases)
+fhm$date <- as.Date("2020-03-10") + 1:length(fhm$cases)
 deaths_global <- rbind(fhm, deaths_global)
 
 countries <- unique(deaths_global$country)
@@ -69,6 +69,7 @@ ui <- dashboardPage(
                 plotOutput("graphRecentNewCases")
             ),
             infoBoxOutput("maxCasesBox"),
+            infoBoxOutput("inflectionPointBox"),
             box(
                 verbatimTextOutput("modelSummaryBox")
             )
@@ -80,6 +81,7 @@ server <- function(input, output, session) {
     maxCases <- reactiveVal()
     summaryVal <- reactiveVal()
     graphDataVal <- reactiveVal()
+    inflectionPoint <- reactiveVal()
     
     output$graph <- renderPlot({
 
@@ -115,6 +117,7 @@ server <- function(input, output, session) {
             Sys.Date()+7
         ))
         inflection_date <- first_case + as.integer(inflection) - 1
+        inflectionPoint(inflection_date)
         maxCases(round(deceased))
         data$model <- NA
         predict_day <- max(model_data$day) + 1
@@ -141,7 +144,7 @@ server <- function(input, output, session) {
             guides(alpha = FALSE) +
             theme_minimal() +
             scale_x_date(limits=x_limits) +
-            geom_vline(aes(xintercept = inflection_date, color="Point of inflection")) +
+            geom_vline(aes(xintercept = inflection_date, color="Inflection point")) +
             xlab("Datum") +
             ylab(input$yaxis) +
             ggtitle(paste0("COVID-19 - Total Cases - ", input$country),
@@ -209,6 +212,13 @@ server <- function(input, output, session) {
         )
     })
 
+    output$inflectionPointBox <- renderInfoBox({
+        infoBox(
+            "INFLECTION POINT", inflectionPoint(), icon=icon("calendar"),
+            color = "purple"
+        )
+    })
+    
     output$modelSummaryBox <- renderPrint({
         print(summaryVal())
     })
