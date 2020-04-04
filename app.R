@@ -133,12 +133,14 @@ server <- function(input, output, session) {
 
         graphDataVal(data) # %>% filter(date <= input$date | type == "Forecast"))
         
-        plot <- ggplot(data, aes(x=date)) +
+        plot <- ggplot(data %>%
+                        subset(date > input$date | type == "History") %>%
+                        mutate(type = if_else(date > input$date & type == "History", "Pending", type)), aes(x=date)) +
             geom_point(aes(y=cases, color=type, alpha=0.8)) +
             guides(alpha = FALSE) +
             theme_minimal() +
             scale_x_date(limits=x_limits) +
-            geom_vline(aes(xintercept = inflection_date, color="Inflection point")) +
+            geom_vline(aes(xintercept = inflection_date, color="Point of inflection")) +
             xlab("Datum") +
             ylab(input$yaxis) +
             ggtitle(paste0("COVID-19 - Total - ", input$country))
@@ -156,8 +158,9 @@ server <- function(input, output, session) {
         data <- graphDataVal()
         
         plot <- ggplot(data %>%
-                    mutate(type = if_else(date > input$date & type == "History", "Pending", type)) %>%
-                    subset(date >= (input$date-7) & date <= (input$date+7)), aes(x=date)) +
+                        mutate(type = if_else(date > input$date & type == "History", "Pending", type)) %>%
+                        subset(date > input$date | type == "History") %>%
+                        subset(date >= (input$date-7) & date <= (input$date+7)), aes(x=date)) +
             geom_col(aes(y=cases, fill=type), position = position_dodge()) +
             geom_text(aes(y=cases, label = cases),
                       show.legend = FALSE, check_overlap = TRUE) +
@@ -180,11 +183,12 @@ server <- function(input, output, session) {
         data <- graphDataVal()
 
         plot <- ggplot(data %>%
-                   group_by(type) %>%
-                   mutate(new_cases = c(0,diff(cases))) %>%
-                   ungroup() %>%
-                   mutate(type = if_else(date > input$date & type == "History", "Pending", type)) %>%
-                   subset(date >= (input$date-7) & date <= (input$date+7)), aes(x=date)) +
+                        group_by(type) %>%
+                        mutate(new_cases = c(0,diff(cases))) %>%
+                        ungroup() %>%
+                        mutate(type = if_else(date > input$date & type == "History", "Pending", type)) %>%
+                        subset(date > input$date | type == "History") %>%
+                        subset(date >= (input$date-7) & date <= (input$date+7)), aes(x=date)) +
             geom_col(aes(y=new_cases, fill=type), position = position_dodge()) +
             geom_text(aes(y=new_cases, label = new_cases),
                       show.legend = FALSE, check_overlap = TRUE) +
