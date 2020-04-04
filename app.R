@@ -37,7 +37,7 @@ deaths_global <- rbind(fhm, deaths_global)
 # https://www.arcgis.com/sharing/rest/content/items/b5e7488e117749c19881cce45db13f7e/data
 fhm <- data.frame(
     country     = "Sweden FHM Excel",
-    cases      = cumsum(c(1,0,1,1,2,2,1,6,7,9,8,11,9,16,22,27,31,29,27,30,33,23,22,2+12))
+    cases      = cumsum(c(1,0,1,1,2,2,1,6,7,9,8,11,9,16,23,27,31,29,28,30,36,25,36,18,1+15))
 )
 fhm$date <- as.Date("2020-03-10") + 1:length(fhm$cases)
 deaths_global <- rbind(fhm, deaths_global)
@@ -125,8 +125,8 @@ server <- function(input, output, session) {
         data$type <- "History"
         data <- data %>% add_row(
             date = NA,
-            day = predict_day:end_day,
-            cases = sapply(predict_day:end_day, function(day) {
+            day = 1:end_day,
+            cases = sapply(1:end_day, function(day) {
                 round(predict(model,data.frame(day=day))) # The formula is: round(deceased - deceased/(1 + (day/inflection)^(-steepness)))
             }),
             type = "Forecast"
@@ -137,7 +137,7 @@ server <- function(input, output, session) {
         predict_total <- filter(data,date==predict_day & type == "Forecast")$cases
         predict_new <- predict_total - filter(data,date==predict_day-1 & type == "Forecast")$cases
 
-        graphDataVal(data %>% filter(date <= input$date | type == "Forecast"))
+        graphDataVal(data) # %>% filter(date <= input$date | type == "Forecast"))
         
         plot <- ggplot(data, aes(x=date)) +
             geom_point(aes(y=cases, color=type, alpha=0.8)) +
@@ -147,14 +147,12 @@ server <- function(input, output, session) {
             geom_vline(aes(xintercept = inflection_date, color="Inflection point")) +
             xlab("Datum") +
             ylab(input$yaxis) +
-            ggtitle(paste0("COVID-19 - Total Cases - ", input$country),
-                    subtitle = paste0("Forecast ", predict_day, " : ", predict_total, " total, ", predict_new, " new")
-            )
+            ggtitle(paste0("COVID-19 - Total - ", input$country))
 
         if (input$scale == "log") {
-            print(plot + scale_y_log10(limits=y_limits, labels = comma))
+            print(plot + scale_y_log10(limits=y_limits, labels = scales::number_format(accuracy = 1, decimal.mark = ',')))
         } else {
-            print(plot + scale_y_continuous(limits=y_limits, labels = comma))
+            print(plot + scale_y_continuous(limits=y_limits, labels = scales::number_format(accuracy = 1, decimal.mark = ',')))
         }
                     
     })
@@ -165,7 +163,7 @@ server <- function(input, output, session) {
         
         plot <- ggplot(data %>%
                    subset(date >= (input$date-7) & date <= (input$date+7)), aes(x=date)) +
-            geom_col(aes(y=cases, fill=type)) +
+            geom_col(aes(y=cases, fill=type), position = position_dodge()) +
             geom_text(aes(y=cases, label = cases),
                       show.legend = FALSE, check_overlap = TRUE) +
             theme_minimal() +
@@ -174,9 +172,9 @@ server <- function(input, output, session) {
             ggtitle(paste0("COVID-19 - Total - 7 day forecast - ", input$country))
 
         if (input$scale == "log") {
-            print(plot + scale_y_log10(labels = comma))
+            print(plot + scale_y_log10(labels = scales::number_format(accuracy = 1, decimal.mark = ',')))
         } else {
-            print(plot + scale_y_continuous(labels = comma))
+            print(plot + scale_y_continuous(labels = scales::number_format(accuracy = 1, decimal.mark = ',')))
         }
         
                 
@@ -185,11 +183,14 @@ server <- function(input, output, session) {
     output$graphRecentNewCases <- renderPlot({
 
         data <- graphDataVal()
-        
+
         plot <- ggplot(data %>%
+                   group_by(type) %>%
                    mutate(new_cases = c(0,diff(cases))) %>%
+                   ungroup() %>%
+                   mutate(type = if_else(date > input$date & type == "History", "Pending", type)) %>%
                    subset(date >= (input$date-7) & date <= (input$date+7)), aes(x=date)) +
-            geom_col(aes(y=new_cases, fill=type)) +
+            geom_col(aes(y=new_cases, fill=type), position = position_dodge()) +
             geom_text(aes(y=new_cases, label = new_cases),
                       show.legend = FALSE, check_overlap = TRUE) +
             theme_minimal() +
@@ -198,9 +199,9 @@ server <- function(input, output, session) {
             ggtitle(paste0("COVID-19 - New - 7 day forecast - ", input$country))
 
         if (input$scale == "log") {
-            print(plot + scale_y_log10(labels = comma))
+            print(plot + scale_y_log10(labels = scales::number_format(accuracy = 1, decimal.mark = ',')))
         } else {
-            print(plot + scale_y_continuous(labels = comma))
+            print(plot + scale_y_continuous(labels = scales::number_format(accuracy = 1, decimal.mark = ',')))
         }
         
     })
