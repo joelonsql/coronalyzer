@@ -24,19 +24,10 @@ deaths_global <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVI
 
 # Additional data for Sweden added manually from Folkhälsomyndighet's two sources:
 
-# FHM dashboard:
-# https://experience.arcgis.com/experience/09f821667ce64bf7be6f9f87457ed9aa
-fhm <- data.frame(
-    country     = "Sweden FHM Arcgis",
-    cases      = c(1,1,1,2,3,7,8,10,12,16,20,23,33,36,42,66,92,102,110,146,180,239,282,333)
-)
-fhm$date <- as.Date("2020-03-10") + 1:length(fhm$cases)
-deaths_global <- rbind(fhm, deaths_global)
-
 # FHM Excel:
 # https://www.arcgis.com/sharing/rest/content/items/b5e7488e117749c19881cce45db13f7e/data
 fhm <- data.frame(
-    country     = "Sweden FHM Excel",
+    country     = "Sweden FHM",
     cases      = cumsum(c(1,0,1,1,2,2,1,6,7,9,8,11,9,16,23,27,31,29,28,30,36,25,36,18,1+15))
 )
 fhm$date <- as.Date("2020-03-10") + 1:length(fhm$cases)
@@ -48,7 +39,7 @@ populations <- read_csv("populations.csv", col_names=c("country","population"))
 ui <- dashboardPage(
     dashboardHeader(title = "Coronalyzer"),
     dashboardSidebar(
-        selectInput("country", "Country:", countries, selected = "Sweden FHM Excel"),
+        selectInput("country", "Country:", countries, selected = "Sweden FHM"),
         sliderInput("date",
                     "Date:",
                     min = as.Date("2020-01-22"),
@@ -73,8 +64,11 @@ ui <- dashboardPage(
             box(
                 verbatimTextOutput("modelSummaryBox")
             )
-        )
+        ),
+        hr(),
+        print("Author: Joel Jakobsson <joel@compiler.org>")
     )
+    
 )
 
 server <- function(input, output, session) {
@@ -162,7 +156,8 @@ server <- function(input, output, session) {
         data <- graphDataVal()
         
         plot <- ggplot(data %>%
-                   subset(date >= (input$date-7) & date <= (input$date+7)), aes(x=date)) +
+                    mutate(type = if_else(date > input$date & type == "History", "Pending", type)) %>%
+                    subset(date >= (input$date-7) & date <= (input$date+7)), aes(x=date)) +
             geom_col(aes(y=cases, fill=type), position = position_dodge()) +
             geom_text(aes(y=cases, label = cases),
                       show.legend = FALSE, check_overlap = TRUE) +
@@ -208,15 +203,15 @@ server <- function(input, output, session) {
 
     output$maxCasesBox <- renderInfoBox({
         infoBox(
-            "FINAL CASES PREDICTED", maxCases(),
-            color = "purple"
+            "FINAL CASES PREDICTED", maxCases(), icon=icon("skull"),
+            color = "black"
         )
     })
 
     output$inflectionPointBox <- renderInfoBox({
         infoBox(
             "INFLECTION POINT", inflectionPoint(), icon=icon("calendar"),
-            color = "purple"
+            color = "black"
         )
     })
     

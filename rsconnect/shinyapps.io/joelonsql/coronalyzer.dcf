@@ -5,8 +5,9 @@ account: joelonsql
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 2034504
-bundleId: 2968195
+bundleId: 2968248
 url: https://joelonsql.shinyapps.io/coronalyzer/
-when: 1586003660.59709
+when: 1586005260.17225
 asMultiple: FALSE
 asStatic: FALSE
+ignoredFiles: nele.png|nele.R
