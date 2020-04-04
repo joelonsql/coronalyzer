@@ -48,12 +48,12 @@ populations <- read_csv("populations.csv", col_names=c("country","population"))
 ui <- dashboardPage(
     dashboardHeader(title = "Coronalyzer"),
     dashboardSidebar(
-        selectInput("country", "Country:", countries, selected = "Sweden"),
+        selectInput("country", "Country:", countries, selected = "Sweden FHM Excel"),
         sliderInput("date",
                     "Date:",
                     min = as.Date("2020-01-22"),
                     max = Sys.Date(),
-                    value = Sys.Date()),
+                    value = Sys.Date()-6),
         radioButtons("yaxis","Y-axis:", c("Deaths","Confirmed cases")),
         radioButtons("scale","Scale:", c("Linear"="lin","Logarithmic"="log"))
     ),
