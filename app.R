@@ -130,9 +130,10 @@ server <- function(input, output, session) {
         pm <- predict(model, newdata=fits, interval="confidence", level=0.68)
         pm2 <- predict(model, newdata=fits, interval="confidence", level=0.95)
         fits$cases <- round(pm[,1])
-        fits$casesmin <- pm[,2]
+        cur_max <- max(data$cases)
+        fits$casesmin <- if_else(pm[,2] < cur_max, cur_max, pm[,2])
         fits$casesmax <- pm[,3]
-        fits$casesmin2 <- pm2[,2]
+        fits$casesmin2 <- if_else(pm2[,2] < cur_max, cur_max, pm2[,2])
         fits$casesmax2 <- pm2[,3]
         data$casesmin <- NA
         data$casesmax <- NA
