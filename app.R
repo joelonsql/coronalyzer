@@ -101,7 +101,6 @@ server <- function(input, output, session) {
             filter(country == input$country, cases > 0)
         first_case <- as.Date(min(data$date))
         data$day <- as.integer(data$date - first_case + 1)
-        data$predictions <- NA
 
         updateSliderInput(session, "date", min = min(data$date))
         updateSliderInput(session, "date", max = max(data$date))
@@ -115,51 +114,56 @@ server <- function(input, output, session) {
         summaryVal(model_summary)
         steepness <- model$coefficients["b:(Intercept)"]
         deceased <- model$coefficients["d:(Intercept)"]
-        y_limits <- c(1,round(max(deceased, base_model$coefficients["d:(Intercept)"])))
+#        y_limits <- c(1,round(max(deceased, base_model$coefficients["d:(Intercept)"])))
         inflection <- model$coefficients["e:(Intercept)"]
-        x_limits <- c(first_case, max(
-            first_case+as.integer(inflection)*2,
-            Sys.Date()+forecast_days
-        ))
+#        x_limits <- c(first_case, max(
+#            first_case+as.integer(inflection)*2,
+#            Sys.Date()+forecast_days
+#        ))
         inflection_date <- first_case + as.integer(inflection) - 1
         inflectionPoint(inflection_date)
         maxCases(round(deceased))
-        data$model <- NA
-        predict_day <- max(model_data$day) + 1
         end_day <- max(as.integer(2*inflection), max(model_data$day) + forecast_days)
         data$type <- "History"
-        data <- data %>% add_row(
-            date = NA,
-            day = 1:end_day,
-            cases = sapply(1:end_day, function(day) {
-                round(predict(model,data.frame(day=day))) # The formula is: round(deceased - deceased/(1 + (day/inflection)^(-steepness)))
-            }),
-            type = "Forecast"
-        )
+        fits <- expand.grid(country=input$country,date=NA,day=seq(1,end_day),type="Forecast")
+        # Formula is: round(deceased - deceased/(1 + (day/inflection)^(-steepness)))
+        pm <- predict(model, newdata=fits, interval="confidence", level=0.68)
+        pm2 <- predict(model, newdata=fits, interval="confidence", level=0.95)
+        fits$cases <- round(pm[,1])
+        fits$casesmin <- pm[,2]
+        fits$casesmax <- pm[,3]
+        fits$casesmin2 <- pm2[,2]
+        fits$casesmax2 <- pm2[,3]
+        data$casesmin <- NA
+        data$casesmax <- NA
+        data$casesmin2 <- NA
+        data$casesmax2 <- NA
+        data <- rbind(data, fits)
         # Convert day from integer to date
         data$date <- first_case + data$day - 1
-        predict_day <- first_case + predict_day - 1
-        predict_total <- filter(data,date==predict_day & type == "Forecast")$cases
-        predict_new <- predict_total - filter(data,date==predict_day-1 & type == "Forecast")$cases
 
         graphDataVal(data) # %>% filter(date <= input$date | type == "Forecast"))
         
         plot <- ggplot(data %>%
                         subset(date > input$date | type == "History") %>%
-                        mutate(type = if_else(date > input$date & type == "History", "Pending", type)), aes(x=date)) +
+                        mutate(type = if_else(date > input$date & type == "History", "Pending", type)),
+                       aes(x=date)) +
             geom_point(aes(y=cases, color=type, alpha=0.8)) +
+            geom_ribbon(aes(ymin=casesmin, ymax=casesmax, fill="68%"), alpha=0.1) +
+            geom_ribbon(aes(ymin=casesmin2, ymax=casesmax2, fill="95%"), alpha=0.2) +
             guides(alpha = FALSE) +
+            labs(x = "Datum", y = input$yaxis, fill = "Confidence interval") +
             theme_minimal() +
-            scale_x_date(limits=x_limits) +
+#            scale_x_date(limits=x_limits) +
             geom_vline(aes(xintercept = inflection_date, color="Point of inflection")) +
-            xlab("Datum") +
-            ylab(input$yaxis) +
             ggtitle(paste0("COVID-19 - Total - ", input$country))
 
         if (input$scale == "log") {
-            print(plot + scale_y_log10(limits=y_limits, labels = scales::number_format(accuracy = 1, decimal.mark = ',')))
+#            print(plot + scale_y_log10(limits=y_limits, labels = scales::number_format(accuracy = 1, decimal.mark = ',')))
+            print(plot + scale_y_log10(labels = scales::number_format(accuracy = 1, decimal.mark = ',')))
         } else {
-            print(plot + scale_y_continuous(limits=y_limits, labels = scales::number_format(accuracy = 1, decimal.mark = ',')))
+#            print(plot + scale_y_continuous(limits=y_limits, labels = scales::number_format(accuracy = 1, decimal.mark = ',')))
+            print(plot + scale_y_continuous(labels = scales::number_format(accuracy = 1, decimal.mark = ',')))
         }
                     
     })
