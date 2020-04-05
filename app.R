@@ -4,6 +4,8 @@ library(drc)
 library(lubridate)
 library(scales) 
 
+forecast_days <- 14
+
 confirmed_global <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv") %>%
     rename(province = "Province/State",
            country = "Country/Region") %>%
@@ -24,10 +26,19 @@ deaths_global <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVI
 
 # Additional data for Sweden added manually from Folkhälsomyndighet's two sources:
 
+# FHM dashboard:
+# https://experience.arcgis.com/experience/09f821667ce64bf7be6f9f87457ed9aa
+fhm <- data.frame(
+    country     = "Sweden FHM Arcgis",
+    cases      = c(1,1,1,2,3,7,8,10,12,16,20,23,33,36,42,66,92,102,110,146,180,239,282,333,373)
+)
+fhm$date <- as.Date("2020-03-10") + 1:length(fhm$cases)
+deaths_global <- rbind(fhm, deaths_global)
+
 # FHM Excel:
 # https://www.arcgis.com/sharing/rest/content/items/b5e7488e117749c19881cce45db13f7e/data
 fhm <- data.frame(
-    country     = "Sweden FHM",
+    country     = "Sweden FHM Excel",
     cases      = cumsum(c(1,0,1,1,2,2,1,6,7,9,8,11,9,16,23,27,31,29,28,30,36,25,36,18,1+15))
 )
 fhm$date <- as.Date("2020-03-10") + 1:length(fhm$cases)
@@ -39,7 +50,7 @@ populations <- read_csv("populations.csv", col_names=c("country","population"))
 ui <- dashboardPage(
     dashboardHeader(title = "Coronalyzer"),
     dashboardSidebar(
-        selectInput("country", "Country:", countries, selected = "Sweden FHM"),
+        selectInput("country", "Country:", countries, selected = "Sweden FHM Excel"),
         sliderInput("date",
                     "Date:",
                     min = as.Date("2020-01-22"),
@@ -108,14 +119,14 @@ server <- function(input, output, session) {
         inflection <- model$coefficients["e:(Intercept)"]
         x_limits <- c(first_case, max(
             first_case+as.integer(inflection)*2,
-            Sys.Date()+7
+            Sys.Date()+forecast_days
         ))
         inflection_date <- first_case + as.integer(inflection) - 1
         inflectionPoint(inflection_date)
         maxCases(round(deceased))
         data$model <- NA
         predict_day <- max(model_data$day) + 1
-        end_day <- max(as.integer(2*inflection), max(model_data$day) + 7)
+        end_day <- max(as.integer(2*inflection), max(model_data$day) + forecast_days)
         data$type <- "History"
         data <- data %>% add_row(
             date = NA,
@@ -160,14 +171,14 @@ server <- function(input, output, session) {
         plot <- ggplot(data %>%
                         mutate(type = if_else(date > input$date & type == "History", "Pending", type)) %>%
                         subset(date > input$date | type == "History") %>%
-                        subset(date >= (input$date-7) & date <= (input$date+7)), aes(x=date)) +
+                        subset(date >= (input$date-forecast_days) & date <= (input$date+forecast_days)), aes(x=date)) +
             geom_col(aes(y=cases, fill=type), position = position_dodge()) +
             geom_text(aes(y=cases, label = cases),
                       show.legend = FALSE, check_overlap = TRUE) +
             theme_minimal() +
             xlab("Date") +
             ylab(input$yaxis) +
-            ggtitle(paste0("COVID-19 - Total - 7 day forecast - ", input$country))
+            ggtitle(paste0("COVID-19 - Total - Forecast - ", input$country))
 
         if (input$scale == "log") {
             print(plot + scale_y_log10(labels = scales::number_format(accuracy = 1, decimal.mark = ',')))
@@ -188,14 +199,14 @@ server <- function(input, output, session) {
                         ungroup() %>%
                         mutate(type = if_else(date > input$date & type == "History", "Pending", type)) %>%
                         subset(date > input$date | type == "History") %>%
-                        subset(date >= (input$date-7) & date <= (input$date+7)), aes(x=date)) +
+                        subset(date >= (input$date-forecast_days) & date <= (input$date+forecast_days)), aes(x=date)) +
             geom_col(aes(y=new_cases, fill=type), position = position_dodge()) +
             geom_text(aes(y=new_cases, label = new_cases),
                       show.legend = FALSE, check_overlap = TRUE) +
             theme_minimal() +
             xlab("Date") +
             ylab(input$yaxis) +
-            ggtitle(paste0("COVID-19 - New - 7 day forecast - ", input$country))
+            ggtitle(paste0("COVID-19 - New - Forecast - ", input$country))
 
         if (input$scale == "log") {
             print(plot + scale_y_log10(labels = scales::number_format(accuracy = 1, decimal.mark = ',')))
