@@ -57,6 +57,7 @@ ui <- dashboardPage(
                     max = Sys.Date(),
                     value = Sys.Date()-6),
         radioButtons("yaxis","Y-axis:", c("Deaths","Confirmed cases")),
+        checkboxInput("per_capita","Per capita"),
         radioButtons("scale","Scale:", c("Linear"="lin","Logarithmic"="log"))
     ),
     dashboardBody(
@@ -99,6 +100,11 @@ server <- function(input, output, session) {
 
         data <- input_data %>%
             filter(country == input$country, cases > 0)
+
+        if (input$per_capita) {
+            data$cases <- data$cases / (filter(populations, country == input$country))$population
+        }
+        
         first_case <- as.Date(min(data$date))
         data$day <- as.integer(data$date - first_case + 1)
 
@@ -122,15 +128,20 @@ server <- function(input, output, session) {
 #        ))
         inflection_date <- first_case + as.integer(inflection) - 1
         inflectionPoint(inflection_date)
-        maxCases(round(deceased))
         end_day <- max(as.integer(2*inflection), max(model_data$day) + forecast_days)
         data$type <- "History"
         fits <- expand.grid(country=input$country,date=NA,day=seq(1,end_day),type="Forecast")
         # Formula is: round(deceased - deceased/(1 + (day/inflection)^(-steepness)))
         pm <- predict(model, newdata=fits, interval="confidence", level=0.68)
         pm2 <- predict(model, newdata=fits, interval="confidence", level=0.95)
-        fits$cases <- round(pm[,1])
-        cur_max <- max(data$cases)
+        if (input$per_capita) {
+            maxCases(paste0(round(deceased*100,4),"%"))
+            fits$cases <- pm[,1]
+        } else {
+            maxCases(round(deceased))
+            fits$cases <- round(pm[,1])
+        }
+        cur_max <- max(model_data$cases)
         fits$casesmin <- if_else(pm[,2] < cur_max, cur_max, pm[,2])
         fits$casesmax <- pm[,3]
         fits$casesmin2 <- if_else(pm2[,2] < cur_max, cur_max, pm2[,2])
@@ -144,14 +155,15 @@ server <- function(input, output, session) {
         data$date <- first_case + data$day - 1
 
         graphDataVal(data) # %>% filter(date <= input$date | type == "Forecast"))
-        
-        plot <- ggplot(data %>%
-                        subset(date > input$date | type == "History") %>%
-                        mutate(type = if_else(date > input$date & type == "History", "Pending", type)),
-                       aes(x=date)) +
+
+        data <- data %>%
+            filter(date > input$date | type == "History") %>%
+            mutate(type = if_else(date > input$date & type == "History", "Pending", type))
+                
+        plot <- ggplot(data, aes(x=date)) +
             geom_point(aes(y=cases, color=type, alpha=0.8)) +
-            geom_ribbon(aes(ymin=casesmin, ymax=casesmax, fill="68%"), alpha=0.1) +
-            geom_ribbon(aes(ymin=casesmin2, ymax=casesmax2, fill="95%"), alpha=0.2) +
+            geom_ribbon(data=filter(data,type=="Forecast"),aes(ymin=casesmin, ymax=casesmax, fill="68%"), alpha=0.1) +
+            geom_ribbon(data=filter(data,type=="Forecast"),aes(ymin=casesmin2, ymax=casesmax2, fill="95%"), alpha=0.2) +
             guides(alpha = FALSE) +
             labs(x = "Datum", y = input$yaxis, fill = "Confidence interval") +
             theme_minimal() +
@@ -159,12 +171,19 @@ server <- function(input, output, session) {
             geom_vline(aes(xintercept = inflection_date, color="Point of inflection")) +
             ggtitle(paste0("COVID-19 - Total - ", input$country))
 
+        labels_f <- NULL
+        if (input$per_capita) {
+            labels_f <- scales::percent
+        } else {
+            labels_f <- scales::number_format(accuracy = 1, decimal.mark = ',')
+        }
+        
         if (input$scale == "log") {
 #            print(plot + scale_y_log10(limits=y_limits, labels = scales::number_format(accuracy = 1, decimal.mark = ',')))
-            print(plot + scale_y_log10(labels = scales::number_format(accuracy = 1, decimal.mark = ',')))
+            print(plot + scale_y_log10(labels = labels_f))
         } else {
 #            print(plot + scale_y_continuous(limits=y_limits, labels = scales::number_format(accuracy = 1, decimal.mark = ',')))
-            print(plot + scale_y_continuous(labels = scales::number_format(accuracy = 1, decimal.mark = ',')))
+            print(plot + scale_y_continuous(labels = labels_f))
         }
                     
     })
@@ -172,23 +191,29 @@ server <- function(input, output, session) {
     output$graphRecentTotalCases <- renderPlot({
         
         data <- graphDataVal()
-        
+
         plot <- ggplot(data %>%
                         mutate(type = if_else(date > input$date & type == "History", "Pending", type)) %>%
                         subset(date > input$date | type == "History") %>%
                         subset(date >= (input$date-forecast_days) & date <= (input$date+forecast_days)), aes(x=date)) +
             geom_col(aes(y=cases, fill=type), position = position_dodge()) +
-            geom_text(aes(y=cases, label = cases),
-                      show.legend = FALSE, check_overlap = TRUE) +
             theme_minimal() +
             xlab("Date") +
             ylab(input$yaxis) +
             ggtitle(paste0("COVID-19 - Total - Forecast - ", input$country))
 
-        if (input$scale == "log") {
-            print(plot + scale_y_log10(labels = scales::number_format(accuracy = 1, decimal.mark = ',')))
+        labels_f <- NULL
+        if (input$per_capita) {
+            labels_f <- scales::percent
         } else {
-            print(plot + scale_y_continuous(labels = scales::number_format(accuracy = 1, decimal.mark = ',')))
+            labels_f <- scales::number_format(accuracy = 1, decimal.mark = ',')
+            plot <- plot + geom_text(aes(y=cases, label = cases), show.legend = FALSE, check_overlap = TRUE)
+        }
+        
+        if (input$scale == "log") {
+            print(plot + scale_y_log10(labels = labels_f))
+        } else {
+            print(plot + scale_y_continuous(labels = labels_f))
         }
         
                 
@@ -206,17 +231,23 @@ server <- function(input, output, session) {
                         subset(date > input$date | type == "History") %>%
                         subset(date >= (input$date-forecast_days) & date <= (input$date+forecast_days)), aes(x=date)) +
             geom_col(aes(y=new_cases, fill=type), position = position_dodge()) +
-            geom_text(aes(y=new_cases, label = new_cases),
-                      show.legend = FALSE, check_overlap = TRUE) +
             theme_minimal() +
             xlab("Date") +
             ylab(input$yaxis) +
             ggtitle(paste0("COVID-19 - New - Forecast - ", input$country))
 
-        if (input$scale == "log") {
-            print(plot + scale_y_log10(labels = scales::number_format(accuracy = 1, decimal.mark = ',')))
+        labels_f <- NULL
+        if (input$per_capita) {
+            labels_f <- scales::percent
         } else {
-            print(plot + scale_y_continuous(labels = scales::number_format(accuracy = 1, decimal.mark = ',')))
+            labels_f <- scales::number_format(accuracy = 1, decimal.mark = ',')
+            plot <- plot + geom_text(aes(y=new_cases, label = new_cases), show.legend = FALSE, check_overlap = TRUE)
+        }
+        
+        if (input$scale == "log") {
+            print(plot + scale_y_log10(labels = labels_f))
+        } else {
+            print(plot + scale_y_continuous(labels = labels_f))
         }
         
     })
