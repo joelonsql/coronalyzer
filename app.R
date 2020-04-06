@@ -30,7 +30,7 @@ deaths_global <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVI
 # https://experience.arcgis.com/experience/09f821667ce64bf7be6f9f87457ed9aa
 fhm <- data.frame(
     country     = "Sweden FHM Arcgis",
-    cases      = c(1,1,1,2,3,7,8,10,12,16,20,23,33,36,42,66,92,102,110,146,180,239,282,333,373,401)
+    cases      = c(1,1,1,2,3,7,8,10,12,16,20,23,33,36,42,66,92,102,110,146,180,239,282,333,373,401,477)
 )
 fhm$date <- as.Date("2020-03-10") + 1:length(fhm$cases)
 deaths_global <- rbind(fhm, deaths_global)
@@ -39,7 +39,7 @@ deaths_global <- rbind(fhm, deaths_global)
 # https://www.arcgis.com/sharing/rest/content/items/b5e7488e117749c19881cce45db13f7e/data
 fhm <- data.frame(
     country     = "Sweden FHM Excel",
-    cases      = cumsum(c(1,0,1,1,2,2,1,6,7,9,8,11,9,16,24,27,32,29,29,30,36,31,43,22,6,1+17))
+    cases      = cumsum(c(1,0,1,1,2,2,1,6,7,9,8,11,10,16,24,28,33,29,31,32,36,35,47,34,17,23,13+20))
 )
 fhm$date <- as.Date("2020-03-10") + 1:length(fhm$cases)
 deaths_global <- rbind(fhm, deaths_global)
@@ -165,7 +165,7 @@ server <- function(input, output, session) {
             geom_ribbon(data=filter(data,type=="Forecast"),aes(ymin=casesmin, ymax=casesmax, fill="68%"), alpha=0.1) +
             geom_ribbon(data=filter(data,type=="Forecast"),aes(ymin=casesmin2, ymax=casesmax2, fill="95%"), alpha=0.2) +
             guides(alpha = FALSE) +
-            labs(x = "Datum", y = input$yaxis, fill = "Confidence interval") +
+            labs(x = "Date", y = input$yaxis, fill = "Confidence interval") +
             theme_minimal() +
 #            scale_x_date(limits=x_limits) +
             geom_vline(aes(xintercept = inflection_date, color="Point of inflection")) +
