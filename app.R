@@ -44,6 +44,14 @@ fhm <- data.frame(
 fhm$date <- as.Date("2020-03-10") + 1:length(fhm$cases)
 deaths_global <- rbind(fhm, deaths_global)
 
+# https://covid19.healthdata.org/projections
+healthdata <- data.frame(
+    country     = "US covid19.healthdata.org",
+    cases      = c(2,3,5,6,9,11,15,18,22,28,28,36,40,44,50,56,59,69,79,103,127,142,214,261,318,444,560,718,948,1214,1600,2030,2477,2997,3874,4765,5914,7071,8826)
+)
+healthdata$date <- as.Date("2020-02-25") + 1:length(healthdata$cases)
+deaths_global <- rbind(healthdata, deaths_global)
+
 countries <- unique(deaths_global$country)
 populations <- read_csv("populations.csv", col_names=c("country","population"))
 
@@ -55,15 +63,18 @@ ui <- dashboardPage(
                     "Date:",
                     min = as.Date("2020-01-22"),
                     max = Sys.Date(),
-                    value = Sys.Date()-6),
+                    value = Sys.Date()-6,
+                    animate = animationOptions(interval=500)
+                    ),
         radioButtons("yaxis","Y-axis:", c("Deaths","Confirmed cases")),
-        checkboxInput("per_capita","Per capita"),
-        radioButtons("scale","Scale:", c("Linear"="lin","Logarithmic"="log"))
+        checkboxInput("perCapita","Per capita"),
+        radioButtons("scale","Scale:", c("Linear"="lin","Logarithmic"="log")),
+        actionButton("lockScales","Lock scales", icon = icon("lock"))
     ),
     dashboardBody(
         fluidRow(
             box(
-                plotOutput("graph")
+                plotOutput("graphCurve")
             ),
             box(
                 plotOutput("graphRecentTotalCases")
@@ -83,14 +94,38 @@ ui <- dashboardPage(
     
 )
 
-server <- function(input, output, session) {
-    maxCases <- reactiveVal()
-    summaryVal <- reactiveVal()
-    graphDataVal <- reactiveVal()
-    inflectionPoint <- reactiveVal()
-    
-    output$graph <- renderPlot({
+setVal <- function(val, key, value) {
+    df <- val()
+    if (is.null(df)) {
+        df <- data.frame()
+    }
+    df[1,key] <- value
+    val(df)
+}
 
+getVal <- function(val, key) {
+    df <- val()
+    df[1,key]
+}
+
+server <- function(input, output, session) {
+    infoBoxes <- reactiveVal()
+    graphDataVal <- reactiveVal()
+    graphCurveX <- reactiveVal()
+    graphCurveY <- reactiveVal()
+
+    output$graphCurve <- renderCachedPlot({
+
+        x_limits <- NULL
+        y_limits <- NULL
+        if (input$lockScales %% 2 == 0) {
+            updateActionButton(session, "lockScales", label = "Lock scales", icon = icon("lock"))
+        } else {
+            x_limits <- graphCurveX()
+            y_limits <- graphCurveY()
+            updateActionButton(session, "lockScales", label = "Unlock scales", icon = icon("lock-open"))
+        }
+        
         input_data <- NA
         if (input$yaxis == "Deaths") {
             input_data <- deaths_global
@@ -101,7 +136,7 @@ server <- function(input, output, session) {
         data <- input_data %>%
             filter(country == input$country, cases > 0)
 
-        if (input$per_capita) {
+        if (input$perCapita) {
             data$cases <- data$cases / (filter(populations, country == input$country))$population
         }
         
@@ -116,29 +151,24 @@ server <- function(input, output, session) {
         model_data <- filter(data, date <= input$date)
         
         model <- drm(cases ~ day, data = model_data, fct = LL.4(fixed=c(NA,0,NA,NA)))
-        model_summary <- summary(model)
-        summaryVal(model_summary)
+        model_summary <- paste(capture.output(summary(model)),collapse="\n")
+        setVal(infoBoxes, paste("summaryVal", input$yaxis, input$country, input$date, input$perCapita, input$scale), model_summary)
         steepness <- model$coefficients["b:(Intercept)"]
         deceased <- model$coefficients["d:(Intercept)"]
-#        y_limits <- c(1,round(max(deceased, base_model$coefficients["d:(Intercept)"])))
         inflection <- model$coefficients["e:(Intercept)"]
-#        x_limits <- c(first_case, max(
-#            first_case+as.integer(inflection)*2,
-#            Sys.Date()+forecast_days
-#        ))
         inflection_date <- first_case + as.integer(inflection) - 1
-        inflectionPoint(inflection_date)
+        setVal(infoBoxes, paste("inflectionPoint", input$yaxis, input$country, input$date, input$perCapita, input$scale), inflection_date)
         end_day <- max(as.integer(2*inflection), max(model_data$day) + forecast_days)
         data$type <- "History"
         fits <- expand.grid(country=input$country,date=NA,day=seq(1,end_day),type="Forecast")
         # Formula is: round(deceased - deceased/(1 + (day/inflection)^(-steepness)))
         pm <- predict(model, newdata=fits, interval="confidence", level=0.68)
         pm2 <- predict(model, newdata=fits, interval="confidence", level=0.95)
-        if (input$per_capita) {
-            maxCases(paste0(round(deceased*100,4),"%"))
+        if (input$perCapita) {
+            setVal(infoBoxes,paste("maxCases", input$yaxis, input$country, input$date, input$perCapita, input$scale),(paste0(round(deceased*100,4),"%")))
             fits$cases <- pm[,1]
         } else {
-            maxCases(round(deceased))
+            setVal(infoBoxes,paste("maxCases", input$yaxis, input$country, input$date, input$perCapita, input$scale),round(deceased))
             fits$cases <- round(pm[,1])
         }
         cur_max <- max(model_data$cases)
@@ -167,28 +197,45 @@ server <- function(input, output, session) {
             guides(alpha = FALSE) +
             labs(x = "Date", y = input$yaxis, fill = "Confidence interval") +
             theme_minimal() +
-#            scale_x_date(limits=x_limits) +
+            scale_x_date(limits=x_limits) +
             geom_vline(aes(xintercept = inflection_date, color="Point of inflection")) +
             ggtitle(paste0("COVID-19 - Total - ", input$country))
 
         labels_f <- NULL
-        if (input$per_capita) {
+        if (input$perCapita) {
             labels_f <- scales::percent
         } else {
             labels_f <- scales::number_format(accuracy = 1, decimal.mark = ',')
         }
         
         if (input$scale == "log") {
-#            print(plot + scale_y_log10(limits=y_limits, labels = scales::number_format(accuracy = 1, decimal.mark = ',')))
-            print(plot + scale_y_log10(labels = labels_f))
+            plot <- plot + scale_y_log10(limits=y_limits, labels = labels_f)
         } else {
-#            print(plot + scale_y_continuous(limits=y_limits, labels = scales::number_format(accuracy = 1, decimal.mark = ',')))
-            print(plot + scale_y_continuous(labels = labels_f))
+            plot <- plot + scale_y_continuous(limits=y_limits, labels = labels_f)
         }
-                    
-    })
 
-    output$graphRecentTotalCases <- renderPlot({
+        if (input$lockScales %% 2 == 0) {
+            # unlocked
+            gpb <- ggplot_build(plot)
+            graphCurveX(c(
+                as.Date(gpb$layout$panel_scales_x[[1]]$range$range[1],origin="1970-01-01"),
+                as.Date(gpb$layout$panel_scales_x[[1]]$range$range[2],origin="1970-01-01")
+            ))
+            graphCurveY(c(
+                gpb$layout$panel_scales_y[[1]]$range$range[1],
+                gpb$layout$panel_scales_y[[1]]$range$range[2]
+            ))
+        }
+        
+        print(plot)        
+
+
+    },
+    cacheKeyExpr = {list(input$yaxis, input$country, input$date, input$perCapita, input$scale, input$lockScales)},
+    sizePolicy = sizeGrowthRatio(width = 1416, height = 640, growthRate = 1.1)
+    )
+
+    output$graphRecentTotalCases <- renderCachedPlot({
         
         data <- graphDataVal()
 
@@ -203,7 +250,7 @@ server <- function(input, output, session) {
             ggtitle(paste0("COVID-19 - Total - Forecast - ", input$country))
 
         labels_f <- NULL
-        if (input$per_capita) {
+        if (input$perCapita) {
             labels_f <- scales::percent
         } else {
             labels_f <- scales::number_format(accuracy = 1, decimal.mark = ',')
@@ -211,18 +258,23 @@ server <- function(input, output, session) {
         }
         
         if (input$scale == "log") {
-            print(plot + scale_y_log10(labels = labels_f))
+            plot <- plot + scale_y_log10(labels = labels_f)
         } else {
-            print(plot + scale_y_continuous(labels = labels_f))
+            plot <- plot + scale_y_continuous(labels = labels_f)
         }
         
+        print(plot)
+        
                 
-    })
+    },
+    cacheKeyExpr = {list(input$yaxis, input$country, input$date, input$perCapita, input$scale)},
+    sizePolicy = sizeGrowthRatio(width = 1416, height = 640, growthRate = 1.1)
+    )
     
-    output$graphRecentNewCases <- renderPlot({
+    output$graphRecentNewCases <- renderCachedPlot({
 
         data <- graphDataVal()
-
+        
         plot <- ggplot(data %>%
                         group_by(type) %>%
                         mutate(new_cases = c(0,diff(cases))) %>%
@@ -237,7 +289,7 @@ server <- function(input, output, session) {
             ggtitle(paste0("COVID-19 - New - Forecast - ", input$country))
 
         labels_f <- NULL
-        if (input$per_capita) {
+        if (input$perCapita) {
             labels_f <- scales::percent
         } else {
             labels_f <- scales::number_format(accuracy = 1, decimal.mark = ',')
@@ -245,29 +297,34 @@ server <- function(input, output, session) {
         }
         
         if (input$scale == "log") {
-            print(plot + scale_y_log10(labels = labels_f))
+            plot <- plot + scale_y_log10(labels = labels_f)
         } else {
-            print(plot + scale_y_continuous(labels = labels_f))
+            plot <- plot + scale_y_continuous(labels = labels_f)
         }
+
+        print(plot)
         
-    })
+    },
+    cacheKeyExpr = {list(input$yaxis, input$country, input$date, input$perCapita, input$scale)},
+    sizePolicy = sizeGrowthRatio(width = 1416, height = 640, growthRate = 1.1)
+    )
 
     output$maxCasesBox <- renderInfoBox({
         infoBox(
-            "FINAL CASES PREDICTED", maxCases(), icon=icon("skull"),
+            "FINAL CASES PREDICTED", getVal(infoBoxes, paste("maxCases", input$yaxis, input$country, input$date, input$perCapita, input$scale)), icon=icon("skull"),
             color = "black"
         )
     })
 
     output$inflectionPointBox <- renderInfoBox({
         infoBox(
-            "INFLECTION POINT", inflectionPoint(), icon=icon("calendar"),
+            "INFLECTION POINT", getVal(infoBoxes, paste("inflectionPoint", input$yaxis, input$country, input$date, input$perCapita, input$scale)), icon=icon("calendar"),
             color = "black"
         )
     })
     
     output$modelSummaryBox <- renderPrint({
-        print(summaryVal())
+        cat(getVal(infoBoxes, paste("summaryVal", input$yaxis, input$country, input$date, input$perCapita, input$scale)))
     })
 }
 
