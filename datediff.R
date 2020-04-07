@@ -1,18 +1,21 @@
 library(tidyverse)
 
 first_date <- as.Date("2020-03-11")
-last_date  <- as.Date("2020-04-06")
-deaths_20200402 <- c(0,0,1,1,2,2,1,6,7,9,8,11, 8,16,22,27,31,26,25,26,26,13, 5, 0,0,  0, 0)
-deaths_20200403 <- c(1,0,1,1,2,2,1,6,7,9,8,11, 9,16,22,27,31,29,27,30,33,23,23, 2,0,  0, 0)
-deaths_20200404 <- c(1,0,1,1,2,2,1,6,7,9,8,11, 9,16,23,27,31,29,28,30,36,25,36,18,1,  0, 0)
-deaths_20200405 <- c(1,0,1,1,2,2,1,6,7,9,8,11, 9,16,24,27,32,29,29,30,36,31,43,22,6,  1, 0)
-deaths_20200406 <- c(1,0,1,1,2,2,1,6,7,9,8,11,10,16,24,28,33,29,31,32,36,35,47,34,17,23,13)
+last_date  <- as.Date("2020-04-07")
+deaths_20200402 <- c(0,0,1,1,2,2,1,6,7,9,8,11, 8,16,22,27,31,26,25,26,26,13, 5, 0,0,  0, 0, 0)
+deaths_20200403 <- c(1,0,1,1,2,2,1,6,7,9,8,11, 9,16,22,27,31,29,27,30,33,23,23, 2,0,  0, 0, 0)
+deaths_20200404 <- c(1,0,1,1,2,2,1,6,7,9,8,11, 9,16,23,27,31,29,28,30,36,25,36,18,1,  0, 0, 0)
+deaths_20200405 <- c(1,0,1,1,2,2,1,6,7,9,8,11, 9,16,24,27,32,29,29,30,36,31,43,22,6,  1, 0, 0)
+deaths_20200406 <- c(1,0,1,1,2,2,1,6,7,9,8,11,10,16,24,28,33,29,31,32,36,35,47,34,17,23,13, 0)
+deaths_20200407 <- c(1,0,1,1,2,2,1,6,7,9,8,11,11,17,24,30,33,31,32,38,37,40,55,49,40,49,37, 2)
+
+stable_date <- first_date + max(which(!is.na(match(deaths_20200407 - deaths_20200406,0)))) - 1
 
 data <- data.frame(deaths = integer(), death_date = as.Date(as.character()), report_date = as.Date(as.character())) %>%
   add_row(
     deaths = deaths_20200402,
     death_date = seq(first_date, last_date, by = "day"),
-    report_date = rep(NA, length(deaths_20200402))
+    report_date = rep(as.Date("2020-04-02"), length(deaths_20200402))
   ) %>%
   add_row(
     deaths = deaths_20200403 - deaths_20200402,
@@ -33,13 +36,19 @@ data <- data.frame(deaths = integer(), death_date = as.Date(as.character()), rep
     deaths = deaths_20200406 - deaths_20200405,
     death_date = seq(first_date, last_date, by = "day"),
     report_date = rep(as.Date("2020-04-06"), length(deaths_20200406))
+  ) %>%
+  add_row(
+    deaths = deaths_20200407 - deaths_20200406,
+    death_date = seq(first_date, last_date, by = "day"),
+    report_date = rep(as.Date("2020-04-07"), length(deaths_20200407))
   )
 
-data$report_date <- as.factor(data$report_date)
+
+# data$report_date <- as.factor(data$report_date)
 
 ggplot(data, aes(x=death_date)) +
-  geom_col(aes(y=deaths, fill=report_date)) +
+  geom_col(aes(y=deaths, fill=report_date), position = position_stack(reverse = TRUE)) +
   theme_minimal() +
   labs(x = "Datum avliden", fill = "Rapportdatum", y = "Antal avlidna") +
-  ggtitle("Folkhälsomyndigheten - Covid19 Historik Excel - Avlidna per dag")
-
+  ggtitle("Folkhälsomyndigheten - Covid19 Historik Excel - Avlidna per dag") +
+  geom_vline(aes(xintercept = stable_date))

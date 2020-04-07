@@ -29,8 +29,8 @@ deaths_global <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVI
 # FHM Excel:
 # https://www.arcgis.com/sharing/rest/content/items/b5e7488e117749c19881cce45db13f7e/data
 fhm <- data.frame(
-    country     = "Sweden FHM Excel",
-    cases      = cumsum(c(1,0,1,1,2,2,1,6,7,9,8,11,10,16,24,28,33,29,31,32,36,35,47,34,17,23,13+20))
+    country     = "Sweden FHM",
+    cases      = cumsum(c(1,0,1,1,2,2,1,6,7,9,8,11,11,17,24,30,33,31,32,38,37,40,55,49,40,49,37,2+17))
 )
 fhm$date <- as.Date("2020-03-10") + 1:length(fhm$cases)
 deaths_global <- rbind(fhm, deaths_global)
@@ -41,7 +41,7 @@ populations <- read_csv("populations.csv", col_names=c("country","population"))
 ui <- dashboardPage(
     dashboardHeader(title = "Coronalyzer"),
     dashboardSidebar(
-        selectInput("country", "Country:", countries, selected = "Sweden FHM Excel"),
+        selectInput("country", "Country:", countries, selected = "Sweden FHM"),
         sliderInput("date",
                     "Date:",
                     min = as.Date("2020-01-22"),
@@ -158,7 +158,7 @@ server <- function(input, output, session) {
         # Convert day from integer to date
         data$date <- first_case + data$day - 1
 
-        graphDataVal(data) # %>% filter(date <= input$date | type == "Forecast"))
+        graphDataVal(data)
 
         data <- data %>%
             filter(date > input$date | type == "History") %>%
@@ -172,7 +172,7 @@ server <- function(input, output, session) {
             labs(x = "Date", y = input$yaxis, fill = "Confidence interval") +
             theme_minimal() +
             geom_vline(aes(xintercept = inflection_date, color="Point of inflection")) +
-            ggtitle(paste0("COVID-19 - Total - ", input$country))
+            ggtitle(paste0("COVID-19 - ", input$country, " - Input <= ", input$date))
 
         labels_f <- NULL
         if (input$perCapita) {
