@@ -12,7 +12,7 @@ data <- data.frame(deaths = integer(), death_date = as.Date(as.character()), rep
   add_row(
     deaths = deaths_20200402,
     death_date = seq(first_date, last_date, by = "day"),
-    report_date = rep(as.Date(NA), length(deaths_20200402))
+    report_date = rep(NA, length(deaths_20200402))
   ) %>%
   add_row(
     deaths = deaths_20200403 - deaths_20200402,
