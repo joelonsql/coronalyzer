@@ -26,15 +26,6 @@ deaths_global <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVI
 
 # Additional data for Sweden added manually from Folkhälsomyndighet's two sources:
 
-# FHM dashboard:
-# https://experience.arcgis.com/experience/09f821667ce64bf7be6f9f87457ed9aa
-fhm <- data.frame(
-    country     = "Sweden FHM Arcgis",
-    cases      = c(1,1,1,2,3,7,8,10,12,16,20,23,33,36,42,66,92,102,110,146,180,239,282,333,373,401,477)
-)
-fhm$date <- as.Date("2020-03-10") + 1:length(fhm$cases)
-deaths_global <- rbind(fhm, deaths_global)
-
 # FHM Excel:
 # https://www.arcgis.com/sharing/rest/content/items/b5e7488e117749c19881cce45db13f7e/data
 fhm <- data.frame(
@@ -43,14 +34,6 @@ fhm <- data.frame(
 )
 fhm$date <- as.Date("2020-03-10") + 1:length(fhm$cases)
 deaths_global <- rbind(fhm, deaths_global)
-
-# https://covid19.healthdata.org/projections
-healthdata <- data.frame(
-    country     = "US covid19.healthdata.org",
-    cases      = c(2,3,5,6,9,11,15,18,22,28,28,36,40,44,50,56,59,69,79,103,127,142,214,261,318,444,560,718,948,1214,1600,2030,2477,2997,3874,4765,5914,7071,8826)
-)
-healthdata$date <- as.Date("2020-02-25") + 1:length(healthdata$cases)
-deaths_global <- rbind(healthdata, deaths_global)
 
 countries <- unique(deaths_global$country)
 populations <- read_csv("populations.csv", col_names=c("country","population"))
@@ -64,7 +47,7 @@ ui <- dashboardPage(
                     min = as.Date("2020-01-22"),
                     max = Sys.Date(),
                     value = Sys.Date()-6,
-                    animate = animationOptions(interval=500)
+                    animate = animationOptions(interval=1000)
                     ),
         radioButtons("yaxis","Y-axis:", c("Deaths","Confirmed cases")),
         checkboxInput("perCapita","Per capita"),
@@ -109,6 +92,7 @@ getVal <- function(val, key) {
 }
 
 server <- function(input, output, session) {
+    shinyOptions(cache = memoryCache(max_size = 100e6))
     infoBoxes <- reactiveVal()
     graphDataVal <- reactiveVal()
     graphCurveX <- reactiveVal()
@@ -116,16 +100,6 @@ server <- function(input, output, session) {
 
     output$graphCurve <- renderCachedPlot({
 
-        x_limits <- NULL
-        y_limits <- NULL
-        if (input$lockScales %% 2 == 0) {
-            updateActionButton(session, "lockScales", label = "Lock scales", icon = icon("lock"))
-        } else {
-            x_limits <- graphCurveX()
-            y_limits <- graphCurveY()
-            updateActionButton(session, "lockScales", label = "Unlock scales", icon = icon("lock-open"))
-        }
-        
         input_data <- NA
         if (input$yaxis == "Deaths") {
             input_data <- deaths_global
@@ -197,7 +171,6 @@ server <- function(input, output, session) {
             guides(alpha = FALSE) +
             labs(x = "Date", y = input$yaxis, fill = "Confidence interval") +
             theme_minimal() +
-            scale_x_date(limits=x_limits) +
             geom_vline(aes(xintercept = inflection_date, color="Point of inflection")) +
             ggtitle(paste0("COVID-19 - Total - ", input$country))
 
@@ -209,12 +182,13 @@ server <- function(input, output, session) {
         }
         
         if (input$scale == "log") {
-            plot <- plot + scale_y_log10(limits=y_limits, labels = labels_f)
+            plot <- plot + scale_y_log10(labels = labels_f)
         } else {
-            plot <- plot + scale_y_continuous(limits=y_limits, labels = labels_f)
+            plot <- plot + scale_y_continuous(labels = labels_f)
         }
 
         if (input$lockScales %% 2 == 0) {
+            updateActionButton(session, "lockScales", label = "Lock scales", icon = icon("lock"))
             # unlocked
             gpb <- ggplot_build(plot)
             graphCurveX(c(
@@ -225,8 +199,11 @@ server <- function(input, output, session) {
                 gpb$layout$panel_scales_y[[1]]$range$range[1],
                 gpb$layout$panel_scales_y[[1]]$range$range[2]
             ))
+        } else {
+            plot <- plot + coord_cartesian(ylim = graphCurveY(), xlim =graphCurveX()) 
+            updateActionButton(session, "lockScales", label = "Unlock scales", icon = icon("lock-open"))
         }
-        
+
         print(plot)        
 
 
