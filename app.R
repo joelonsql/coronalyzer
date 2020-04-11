@@ -30,7 +30,7 @@ deaths_global <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVI
 # https://www.arcgis.com/sharing/rest/content/items/b5e7488e117749c19881cce45db13f7e/data
 fhm <- data.frame(
     country     = "Sweden FHM",
-    cases      = cumsum(c(1,0,1,1,2,2,1,6,7,9,8,11,11,17,24,30,33,31,32,38,37,40,55,49,40,49,37,2+17))
+    cases      = cumsum(c(1,0,1,1,2,2,2,6,7,10,7,12,11,20,25,30,32,34,37,41,42,47,67,65,57,75,74,60,70,23,13+13))
 )
 fhm$date <- as.Date("2020-03-10") + 1:length(fhm$cases)
 deaths_global <- rbind(fhm, deaths_global)
@@ -46,7 +46,7 @@ ui <- dashboardPage(
                     "Date:",
                     min = as.Date("2020-01-22"),
                     max = Sys.Date(),
-                    value = Sys.Date()-6,
+                    value = as.Date("2020-04-07"),
                     animate = animationOptions(interval=1000)
                     ),
         radioButtons("yaxis","Y-axis:", c("Deaths","Confirmed cases")),
@@ -147,9 +147,9 @@ server <- function(input, output, session) {
         }
         cur_max <- max(model_data$cases)
         fits$casesmin <- if_else(pm[,2] < cur_max, cur_max, pm[,2])
-        fits$casesmax <- pm[,3]
+        fits$casesmax <- if_else(pm[,3] < cur_max, cur_max, pm[,3])
         fits$casesmin2 <- if_else(pm2[,2] < cur_max, cur_max, pm2[,2])
-        fits$casesmax2 <- pm2[,3]
+        fits$casesmax2 <- if_else(pm2[,3] < cur_max, cur_max, pm2[,3])
         data$casesmin <- NA
         data$casesmax <- NA
         data$casesmin2 <- NA
