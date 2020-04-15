@@ -81,6 +81,16 @@ data <- data %>%
   group_by(death_date) %>%
   mutate(new_deaths = deaths - coalesce(lag(deaths, order_by = report_date),0))
 
+data$lag_effect <- as.integer(data$report_date - data$death_date)
+
+ggplot(data %>% filter(new_deaths > 0)) +
+  geom_point(aes(x=death_date, y=report_date, size=new_deaths, color=lag_effect)) +
+  theme_minimal() +
+  labs(x = "Avliden_datum", color = "Eftersläpning", y = "Rapportdatum", size="Nya dödsfall") +
+  ggtitle("Folkhälsomyndigheten - Covid19 Historik Excel - Avlidna per dag") +
+  scale_color_gradientn(colours = terrain.colors(10)) +
+  scale_y_date(breaks = "1 day")
+
 data$report_date <- as.factor(data$report_date)
 
 plot <- ggplot(data, aes(x=death_date)) +
