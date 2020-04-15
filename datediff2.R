@@ -1,4 +1,5 @@
 library(tidyverse)
+library(plotly)
 
 first_date <- as.Date("2020-03-11")
 last_date  <- as.Date("2020-04-15")
@@ -76,14 +77,18 @@ data <- rbind(
   )
 )
 
-# stable_date <- as.Date("2020-04-02") # first_date + max(which(!is.na(match(deaths_20200415 - deaths_20200414,0)))) - 1
+data <- data %>%
+  group_by(death_date) %>%
+  mutate(new_deaths = deaths - coalesce(lag(deaths, order_by = report_date),0))
 
 data$report_date <- as.factor(data$report_date)
-ggplot(data, aes(x=death_date)) +
-  geom_col(aes(y=deaths, fill=report_date), position = position_stack(reverse = TRUE)) +
+
+plot <- ggplot(data, aes(x=death_date)) +
+  geom_col(aes(y=new_deaths, fill=report_date), position = position_stack(reverse = TRUE)) +
   theme_minimal() +
   labs(x = "Datum avliden", fill = "Rapportdatum", y = "Antal avlidna") +
   ggtitle("Folkhälsomyndigheten - Covid19 Historik Excel - Avlidna per dag")
-#   geom_vline(aes(xintercept = stable_date))
 
+plot
 
+ggplotly(plot)
