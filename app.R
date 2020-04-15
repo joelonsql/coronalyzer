@@ -4,7 +4,7 @@ library(drc)
 library(lubridate)
 library(scales) 
 
-forecast_days <- 14
+forecast_days <- 60
 
 confirmed_global <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv") %>%
     rename(province = "Province/State",
