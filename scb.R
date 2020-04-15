@@ -44,7 +44,7 @@ data <- data %>%
   group_by(age, year) %>%
   arrange(date) %>%
   mutate(
-    roll_deaths = frollapply(deaths,60,mean),
+    roll_deaths = frollapply(deaths,30,mean),
     cummax      = cummax(deaths)
   ) %>%
   ungroup() %>%
@@ -53,6 +53,7 @@ data <- data %>%
 daily_max <- max(data$deaths)
 
 ggplot(data, aes(x=date)) +
+  geom_point(aes(y=deaths, color=year, alpha=0.5)) +
   geom_point(aes(y=deaths, color=year, alpha=0.5)) +
   geom_line(aes(y=roll_deaths, color=year), linetype = 2) +
   geom_line(aes(y=cummax, color=year)) +
