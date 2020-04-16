@@ -74,6 +74,11 @@ data <- rbind(
     report_date = as.Date("2020-04-15"),
     death_date = seq(first_date,first_date+35,by=1),
     deaths = c(1,0,1,1,2,2,1,6,7,10,7,12,11,20,25,30,32,35,38,42,43,49,68,69,60,78,82,70,90,55,52,50,54,45,31,6)
+  ),
+  data.frame(
+    report_date = as.Date("2020-04-16"),
+    death_date = seq(first_date,first_date+36,by=1),
+    deaths = c(1,0,1,1,2,2,1,6,7,10,7,12,11,20,25,30,32,35,38,42,43,50,68,71,61,79,85,75,97,63,62,61,62,55,49,41,10)
   )
 )
 
@@ -83,7 +88,7 @@ data <- data %>%
 
 data$lag_effect <- as.integer(data$report_date - data$death_date)
 
-ggplot(data %>% filter(new_deaths > 0)) +
+ggplot(data %>% filter(new_deaths > 0 & report_date > min(data$report_date))) +
   geom_point(aes(x=death_date, y=report_date, size=new_deaths, color=lag_effect)) +
   theme_minimal() +
   labs(x = "Avliden_datum", color = "Eftersläpning", y = "Rapportdatum", size="Nya dödsfall") +
