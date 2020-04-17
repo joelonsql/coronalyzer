@@ -79,6 +79,11 @@ data <- rbind(
     report_date = as.Date("2020-04-16"),
     death_date = seq(first_date,first_date+36,by=1),
     deaths = c(1,0,1,1,2,2,1,6,7,10,7,12,11,20,25,30,32,35,38,42,43,50,68,71,61,79,85,75,97,63,62,61,62,55,49,41,10)
+  ),
+  data.frame(
+    report_date = as.Date("2020-04-17"),
+    death_date = seq(first_date,first_date+37,by=1),
+    deaths = c(1,0,1,1,2,2,1,6,7,10,7,12,11,20,25,29,32,35,38,43,44,50,67,75,66,79,87,76,99,66,62,63,67,56,56,45,38,4)
   )
 )
 
@@ -86,9 +91,13 @@ data <- data %>%
   group_by(death_date) %>%
   mutate(new_deaths = deaths - coalesce(lag(deaths, order_by = report_date),0))
 
-data$lag_effect <- as.integer(data$report_date - data$death_date)
+data$lag_effect <- as.numeric(data$report_date - data$death_date)
 
-ggplot(data %>% filter(new_deaths > 0 & report_date > min(data$report_date))) +
+min_date <- min(data$report_date)
+
+data <- data %>% mutate(lag_effect = if_else(report_date > min_date, lag_effect, 0))
+
+ggplot(data %>% filter(new_deaths > 0 & report_date > min_date)) +
   geom_point(aes(x=death_date, y=report_date, size=new_deaths, color=lag_effect)) +
   theme_minimal() +
   labs(x = "Avliden_datum", color = "Eftersläpning", y = "Rapportdatum", size="Nya dödsfall") +
@@ -98,11 +107,19 @@ ggplot(data %>% filter(new_deaths > 0 & report_date > min(data$report_date))) +
 
 data$report_date <- as.factor(data$report_date)
 
+data$lag_effect <- if_else(data$lag_effect < 7, data$lag_effect, 7)
+data$lag_effect <-  as.factor(data$lag_effect)
 plot <- ggplot(data, aes(x=death_date)) +
-  geom_col(aes(y=new_deaths, fill=report_date), position = position_stack(reverse = TRUE)) +
+  geom_col(aes(y=new_deaths, fill=lag_effect), position = position_stack(reverse = TRUE)) +
   theme_minimal() +
-  labs(x = "Datum avliden", fill = "Rapportdatum", y = "Antal avlidna") +
+  labs(x = "Datum avliden", fill = "Eftersläpning", y = "Antal avlidna") +
   ggtitle("Folkhälsomyndigheten - Covid19 Historik Excel - Avlidna per dag")
+
+#plot <- ggplot(data, aes(x=death_date)) +
+#  geom_col(aes(y=new_deaths, fill=report_date), position = position_stack(reverse = TRUE)) +
+#  theme_minimal() +
+#  labs(x = "Datum avliden", fill = "Rapportdatum", y = "Antal avlidna") +
+#  ggtitle("Folkhälsomyndigheten - Covid19 Historik Excel - Avlidna per dag")
 
 plot
 
