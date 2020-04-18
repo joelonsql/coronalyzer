@@ -4,4 +4,4 @@
 
 ![Lag](https://github.com/joelonsql/coronalyzer/blob/master/Folkhalsomyndigheten_Covid19/lag-2020-04-18.png?raw=true "Lag")
 
-[Interactive graph](https://rpubs.com/purrpurr/600560)
+[Interactive graph](https://rpubs.com/purrpurr/600996)
