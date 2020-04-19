@@ -89,6 +89,11 @@ data <- rbind(
     report_date = as.Date("2020-04-18"),
     death_date = seq(first_date,first_date+38,by=1),
     deaths = c(1,0,1,1,2,2,1,6,7,10,7,12,11,20,25,29,32,35,38,44,45,50,67,78,68,81,88,77,101,73,73,73,76,62,60,55,59,20,2)
+  ),
+  data.frame(
+    report_date = as.Date("2020-04-19"),
+    death_date = seq(first_date,first_date+39,by=1),
+    deaths = c(1,0,1,1,2,2,1,6,7,10,7,12,11,20,25,29,32,35,38,44,45,51,67,79,68,81,90,78,102,75,75,74,79,63,60,56,61,23,9,1)
   )
 )
 
@@ -113,9 +118,16 @@ ggplot(data %>% filter(new_deaths > 0 & report_date > min_date)) +
 
 data$report_date <- as.factor(data$report_date)
 
+ggplot(data, aes(x=death_date)) +
+  geom_line(aes(y=deaths, color=report_date)) +
+  theme_minimal() +
+  ggtitle("Folkhälsomyndigheten - Covid19 - Avlidna per dag") +
+  labs(x = "Datum avliden", color = "Rapportdatum", y = "Antal avlidna")
+
 data$lag_effect <- if_else(data$lag_effect < 7, data$lag_effect, 7)
 data$lag_effect <-  as.factor(data$lag_effect)
-plot <- ggplot(data, aes(x=death_date)) +
+
+ggplot(data, aes(x=death_date)) +
   geom_col(aes(y=new_deaths, fill=lag_effect), position = position_stack(reverse = TRUE)) +
   theme_minimal() +
   labs(x = "Datum avliden", fill = "Eftersläpning", y = "Antal avlidna") +
@@ -125,14 +137,17 @@ plot <- ggplot(data, aes(x=death_date)) +
   geom_label(data=data.frame(death_date=as.Date("2020-04-08")), aes(y=98, label="8/4: Nu ligger vi på 45 eller högre."), hjust = "outward") +
   scale_y_continuous(breaks = seq(0,100,by=10))
 
-#plot <- ggplot(data, aes(x=death_date)) +
-#  geom_col(aes(y=new_deaths, fill=report_date), position = position_stack(reverse = TRUE)) +
-#  theme_minimal() +
-#  labs(x = "Datum avliden", fill = "Rapportdatum", y = "Antal avlidna") +
-#  ggtitle("Folkhälsomyndigheten - Covid19 Historik Excel - Avlidna per dag")
+plot <- ggplot(data, aes(x=death_date)) +
+  geom_col(aes(y=new_deaths, fill=report_date), position = position_stack(reverse = TRUE)) +
+  theme_minimal() +
+  labs(x = "Datum avliden", fill = "Rapportdatum", y = "Antal avlidna") +
+  ggtitle("Folkhälsomyndigheten - Covid19 Historik Excel - Avlidna per dag")
 
 plot
 
-# ggplotly(plot)
+ggplotly(plot)
+
+
+
 
 

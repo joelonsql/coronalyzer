@@ -30,7 +30,7 @@ deaths_global <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVI
 # https://www.arcgis.com/sharing/rest/content/items/b5e7488e117749c19881cce45db13f7e/data
 fhm <- data.frame(
     country     = "Sweden FHM",
-    cases      = cumsum(c(1,0,1,1,2,2,1,6,7,10,7,12,11,20,25,29,32,35,38,44,45,50,67,78,68,81,88,77,101,73,73,73,76,62,60,55,59,20,2+19))
+    cases      = cumsum(c(1,0,1,1,2,2,1,6,7,10,7,12,11,20,25,29,32,35,38,44,45,51,67,79,68,81,90,78,102,75,75,74,79,63,60,56,61,23,9,1+19))
 )
 fhm$date <- as.Date("2020-03-10") + 1:length(fhm$cases)
 deaths_global <- rbind(fhm, deaths_global)
@@ -46,7 +46,7 @@ ui <- dashboardPage(
                     "Date:",
                     min = as.Date("2020-01-22"),
                     max = Sys.Date(),
-                    value = as.Date("2020-04-03"),
+                    value = as.Date("2020-04-05"),
                     animate = animationOptions(interval=1000)
                     ),
         radioButtons("yaxis","Y-axis:", c("Deaths","Confirmed cases")),
