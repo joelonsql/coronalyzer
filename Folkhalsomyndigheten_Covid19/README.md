@@ -1,6 +1,6 @@
 # Visualisering av Folkhälsomyndighetens "eftersläpningseffekt"
 
-![Lag](https://github.com/joelonsql/coronalyzer/blob/master/Folkhalsomyndigheten_Covid19/2020-04-20.png?raw=true "Lag")
+![Lag](https://github.com/joelonsql/coronalyzer/blob/master/Folkhalsomyndigheten_Covid19/2020-04-20b.png?raw=true "Lag")
 
 ![Lag](https://github.com/joelonsql/coronalyzer/blob/master/Folkhalsomyndigheten_Covid19/lag-2020-04-20.png?raw=true "Lag")
 

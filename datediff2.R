@@ -137,9 +137,10 @@ ggplot(data, aes(x=death_date)) +
   theme_minimal() +
   labs(x = "Datum avliden", fill = "Eftersläpning", y = "Antal avlidna") +
   ggtitle("Folkhälsomyndigheten - Covid19 - Avlidna per dag") +
-  geom_label(data=data.frame(death_date=as.Date("2020-04-06")), aes(y=90, label="6/4: Fallen ligger på knappt 30 om dan"), hjust = "outward") +
-  geom_label(data=data.frame(death_date=as.Date("2020-04-07")), aes(y=75, label="7/4: Vi ligger på ett snitt på 40 fall per dygn."), hjust = "outward") +
-  geom_label(data=data.frame(death_date=as.Date("2020-04-08")), aes(y=98, label="8/4: Nu ligger vi på 45 eller högre."), hjust = "outward") +
+  geom_label(data=data.frame(death_date=as.Date("2020-04-06")), aes(y=30, label="6/4: Fallen ligger på knappt 30 om dan."), hjust = "inward") +
+  geom_label(data=data.frame(death_date=as.Date("2020-04-07")), aes(y=40, label="7/4: Vi ligger på ett snitt på 40 fall per dygn."), hjust = "inward") +
+  geom_label(data=data.frame(death_date=as.Date("2020-04-08")), aes(y=45, label="8/4: Nu ligger vi på 45 eller högre."), hjust = "inward") +
+  geom_label(data=data.frame(death_date=as.Date("2020-04-20")), aes(y=60, label="20/4: Vi ligger i snitt på 60 fall om dagen."), hjust = "inward") +
   scale_y_continuous(breaks = seq(0,100,by=10))
 
 plot <- ggplot(data, aes(x=death_date)) +
