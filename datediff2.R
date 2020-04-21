@@ -99,6 +99,11 @@ data <- rbind(
     report_date = as.Date("2020-04-20"),
     death_date = seq(first_date,first_date+40,by=1),
     deaths = c(1,0,1,1,2,2,1,6,7,10,7,12,11,20,25,29,32,35,38,44,45,51,67,79,68,81,90,78,102,76,75,74,79,63,60,57,63,30,19,17,2)
+  ),
+  data.frame(
+    report_date = as.Date("2020-04-21"),
+    death_date = seq(first_date,first_date+41,by=1),
+    deaths = c(1,0,1,1,2,2,1,6,7,10,7,12,11,20,25,29,32,35,39,44,45,52,67,81,69,82,90,81,106,79,78,84,86,72,67,77,78,49,51,43,21,3)
   )
 )
 
@@ -132,7 +137,7 @@ ggplot(data, aes(x=death_date)) +
 data$lag_effect <- if_else(data$lag_effect < 7, data$lag_effect, 7)
 data$lag_effect <-  as.factor(data$lag_effect)
 
-ggplot(data, aes(x=death_date)) +
+plot <- ggplot(data, aes(x=death_date)) +
   geom_col(aes(y=new_deaths, fill=lag_effect), position = position_stack(reverse = TRUE)) +
   theme_minimal() +
   labs(x = "Datum avliden", fill = "Eftersläpning", y = "Antal avlidna") +
@@ -142,12 +147,6 @@ ggplot(data, aes(x=death_date)) +
   geom_label(data=data.frame(death_date=as.Date("2020-04-08")), aes(y=45, label="8/4: Nu ligger vi på 45 eller högre."), hjust = "inward") +
   geom_label(data=data.frame(death_date=as.Date("2020-04-20")), aes(y=60, label="20/4: Vi ligger i snitt på 60 fall om dagen."), hjust = "inward") +
   scale_y_continuous(breaks = seq(0,100,by=10))
-
-plot <- ggplot(data, aes(x=death_date)) +
-  geom_col(aes(y=new_deaths, fill=report_date), position = position_stack(reverse = TRUE)) +
-  theme_minimal() +
-  labs(x = "Datum avliden", fill = "Rapportdatum", y = "Antal avlidna") +
-  ggtitle("Folkhälsomyndigheten - Covid19 Historik Excel - Avlidna per dag")
 
 plot
 

@@ -1,6 +1,7 @@
 library(readxl)
 library(tidyverse)
 library(data.table)
+library(plotly)
 
 fix <- function(data, year) {
   data %>%
@@ -52,10 +53,10 @@ data <- data %>%
 
 daily_max <- max(data$deaths)
 
-ggplot(data, aes(x=date)) +
+plot <- ggplot(data, aes(x=date)) +
   geom_point(aes(y=deaths, color=year, alpha=0.5)) +
   geom_point(aes(y=deaths, color=year, alpha=0.5)) +
-  geom_line(aes(y=roll_deaths, color=year), linetype = 2) +
+  geom_line(aes(y=roll_deaths, color=year), linetype = 2, size=1) +
   geom_line(aes(y=cummax, color=year)) +
   geom_ribbon(aes(ymin=mean-sd*3,ymax=mean+sd*3,fill="μ ± 3σ (99.73%)"),alpha=0.2) +
   geom_ribbon(aes(ymin=mean-sd*4,ymax=mean+sd*4,fill="μ ± 4σ (99.99%)"),alpha=0.2) +
@@ -65,6 +66,8 @@ ggplot(data, aes(x=date)) +
   guides(alpha = FALSE) +
   theme_minimal() +
   scale_y_continuous(breaks=seq(0,daily_max,by=10))
+
+ggplotly(plot)
 
 #ggplot(data) +
 #  geom_boxplot(aes(x=year, y=deaths, fill=month.abb[month(date)])) +

@@ -26,3 +26,19 @@ plot <- ggplot(data, aes(x=date, y=deaths, color=year)) +
 plot
 
 ggplotly(plot)
+
+data <- data %>%
+  filter(date >= as.Date("2020-03-15") & date < Sys.Date()-14) %>%
+  group_by(year) %>%
+  arrange(date) %>%
+  mutate(cumsum_deaths = cumsum(deaths))
+
+plot <- ggplot(data, aes(x=date, y=cumsum_deaths, color=year)) +
+  geom_line() +
+  theme_minimal() +
+  ggtitle("Deaths registered in Sweden", subtitle="Source: https://www.scb.se/hitta-statistik/statistik-efter-amne/befolkning/befolkningens-sammansattning/befolkningsstatistik/pong/tabell-och-diagram/preliminar-statistik-over-doda/") +
+  labs(y = "Cumulative sum of daily deaths registered", x = "Day")
+
+plot
+
+ggplotly(plot)
