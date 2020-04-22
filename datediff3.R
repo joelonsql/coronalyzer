@@ -7,8 +7,8 @@ n_days <- as.integer(last_date - first_date)
 data <- rbind(
   data.frame(
     report_date = as.Date("2020-04-02"),
-    death_date = seq(first_date,first_date+22,by=1),
-    deaths = c(0,0,1,1,2,2,1,6,7, 9,8,11,8,16,22,27,31,26,25,26,26,13,5)
+    death_date = seq(first_date,first_date+42,by=1),
+    deaths = c(0,0,1,1,2,2,1,6,7, 9,8,11,8,16,22,27,31,26,25,26,26,13,5,rep(0,20))
   ),
   data.frame(
     report_date = as.Date("2020-04-03"),
@@ -112,52 +112,11 @@ data <- rbind(
   )
 )
 
-data <- data %>%
-  group_by(death_date) %>%
-  mutate(new_deaths = deaths - coalesce(lag(deaths, order_by = report_date),0))
 
-data$lag_effect <- as.numeric(data$report_date - data$death_date)
-
-min_date <- min(data$report_date)
-max_date <- max(data$report_date)
-
-data <- data %>% mutate(lag_effect = if_else(report_date > min_date, lag_effect, 0))
-
-ggplot(data %>% filter(new_deaths > 0 & report_date > min_date)) +
-  geom_point(aes(x=death_date, y=report_date, size=new_deaths, color=lag_effect)) +
-  theme_minimal() +
-  labs(x = "Avliden_datum", color = "Eftersläpning", y = "Rapportdatum", size="Nya dödsfall") +
-  ggtitle("Folkhälsomyndigheten - Covid19 Historik Excel - Avlidna per dag") +
-  scale_color_gradientn(colours = terrain.colors(10)) +
-  scale_y_date(breaks = "1 day")
-
-data$report_date <- as.factor(data$report_date)
-
-ggplot(data, aes(x=death_date)) +
-  geom_line(aes(y=deaths, color=report_date)) +
-  theme_minimal() +
-  ggtitle("Folkhälsomyndigheten - Covid19 - Avlidna per dag") +
-  labs(x = "Datum avliden", color = "Rapportdatum", y = "Antal avlidna")
-
-data$lag_effect <- if_else(data$lag_effect < 7, data$lag_effect, 7)
-data$lag_effect <-  as.factor(data$lag_effect)
-
-plot <- ggplot(data, aes(x=death_date)) +
-  geom_col(aes(y=new_deaths, fill=lag_effect), position = position_stack(reverse = TRUE)) +
-  theme_minimal() +
-  labs(x = "Datum avliden", fill = "Eftersläpning", y = "Antal avlidna") +
-  ggtitle("Folkhälsomyndigheten - Covid19 - Avlidna per dag") +
-  geom_label(data=data.frame(death_date=as.Date("2020-04-06")), aes(y=30, label="6/4: Fallen ligger på knappt 30 om dan."), hjust = "inward") +
-  geom_label(data=data.frame(death_date=as.Date("2020-04-07")), aes(y=40, label="7/4: Vi ligger på ett snitt på 40 fall per dygn."), hjust = "inward") +
-  geom_label(data=data.frame(death_date=as.Date("2020-04-08")), aes(y=45, label="8/4: Nu ligger vi på 45 eller högre."), hjust = "inward") +
-  geom_label(data=data.frame(death_date=as.Date("2020-04-20")), aes(y=60, label="20/4: Vi ligger i snitt på 60 fall om dagen."), hjust = "inward") +
-  scale_y_continuous(breaks = seq(0,100,by=10))
-
-plot
-
-ggplotly(plot)
-
-
-
-
+plot_ly(data, alpha = 0.5) %>%
+  add_lines(
+    x = ~as.character(death_date),
+    y = ~deaths,
+    frame = ~as.character(report_date)
+  )
 
