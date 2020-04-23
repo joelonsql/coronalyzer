@@ -30,7 +30,7 @@ deaths_global <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVI
 # https://www.arcgis.com/sharing/rest/content/items/b5e7488e117749c19881cce45db13f7e/data
 fhm <- data.frame(
     country     = "Sweden FHM",
-    cases      = cumsum(c(1,0,1,1,2,2,1,6,7,10,7,12,11,21,24,29,32,35,39,44,46,51,69,81,71,84,89,82,110,85,84,93,94,84,81,96,96,57,59,53,46,18,5+18))
+    cases      = cumsum(c(1,0,1,1,2,2,1,6,7,9,8,12,11,20,23,31,32,35,39,43,47,52,69,78,71,86,91,83,111,84,89,96,95,84,89,102,99,64,63,60,54,26,26,3+15))
 )
 fhm$date <- as.Date("2020-03-10") + 1:length(fhm$cases)
 deaths_global <- rbind(fhm, deaths_global)
