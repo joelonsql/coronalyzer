@@ -117,6 +117,8 @@ data <- rbind(
   )
 )
 
+write_csv(data, "fhm.csv")
+
 data <- data %>%
   group_by(death_date) %>%
   mutate(new_deaths = deaths - coalesce(lag(deaths, order_by = report_date),0))
