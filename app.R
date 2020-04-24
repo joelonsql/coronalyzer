@@ -24,15 +24,29 @@ deaths_global <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVI
     summarise(cases = sum(cases)) %>%
     ungroup()
 
-# Additional data for Sweden added manually from Folkhälsomyndighet's two sources:
+# Additional data for Sweden added manually from Folkhälsomyndighet:
 
-# FHM Excel:
-# https://www.arcgis.com/sharing/rest/content/items/b5e7488e117749c19881cce45db13f7e/data
-fhm <- data.frame(
-    country     = "Sweden FHM",
-    cases      = cumsum(c(1,0,1,1,2,2,1,6,7,9,8,12,11,20,23,31,32,35,39,43,47,52,69,78,71,86,91,83,111,84,89,96,95,84,89,102,99,64,63,60,54,26,26,3+15))
+# Connect to PostgreSQL
+db <- dbConnect(
+    RPostgres::Postgres(),
+    dbname = "c19",
+    host = "c19.truthly.com",
+    port = 5432,
+    user = "c19"
 )
-fhm$date <- as.Date("2020-03-10") + 1:length(fhm$cases)
+
+fhm <- dbGetQuery(db, "
+  SELECT
+    death_date AS date,
+    (SUM(deaths) OVER (ORDER BY death_date))::numeric AS cases
+  FROM deaths
+  WHERE report_date = (SELECT MAX(report_date) FROM deaths)
+")
+
+dbDisconnect(db)
+
+fhm$country <- "Sweden FHM"
+
 deaths_global <- rbind(fhm, deaths_global)
 
 countries <- unique(deaths_global$country)
