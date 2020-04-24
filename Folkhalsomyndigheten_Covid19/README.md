@@ -1,9 +1,6 @@
 # Visualisering av Folkhälsomyndighetens "eftersläpningseffekt"
 
-![Lag](https://github.com/joelonsql/coronalyzer/blob/master/Folkhalsomyndigheten_Covid19/2020-04-23.png?raw=true "Lag")
+Uppdateringen av dessa grafer tog för lång tid att sköta manuellt
+och har nu automatiserats.
 
-![Lag](https://github.com/joelonsql/coronalyzer/blob/master/Folkhalsomyndigheten_Covid19/lag-2020-04-23.png?raw=true "Lag")
-
-![Lag](https://github.com/joelonsql/coronalyzer/blob/master/Folkhalsomyndigheten_Covid19/lag2-2020-04-23.png?raw=true "Lag")
-
-[Interactive graph](https://rpubs.com/purrpurr/603565)
+Projektet har flyttats till: https://github.com/truthly/c19
